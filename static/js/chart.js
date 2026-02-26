@@ -112,9 +112,10 @@ export async function renderHistoryChart(days = 1) {
         const width = 300;
         const height = 150;
         const padding = 10;
+        const paddingX = 15; // Extra padding so circles don't touch Y-axis
 
         const points = values.map((v, i) => {
-            const x = values.length === 1 ? width / 2 : (i / (values.length - 1)) * width;
+            const x = values.length === 1 ? width / 2 : paddingX + (i / (values.length - 1)) * (width - 2 * paddingX);
             const y = padding + ((max - v) / range) * (height - 2 * padding);
             return { x, y };
         });
@@ -239,29 +240,37 @@ export async function renderHistoryChart(days = 1) {
         }
 
         if (labelContainer) {
-            let labels;
+            const numPoints = keys.length;
+            let labelIndices = [];
+
             if (days === 1) {
-                const labelHours = keys.length <= 6
-                    ? keys
-                    : keys.filter((_, i) => i === 0 || i === keys.length - 1 || i % Math.ceil(keys.length / 4) === 0);
-                labels = labelHours.map(h => `${h}:00`);
+                const step = Math.ceil((numPoints - 1) / 4);
+                for (let i = 0; i < numPoints; i += step) labelIndices.push(i);
+                if (numPoints > 0 && labelIndices[labelIndices.length - 1] !== numPoints - 1) labelIndices.push(numPoints - 1);
             } else if (days <= 7) {
-                const dayNames = [t("sun"), t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat")];
-                labels = keys.map((d) => {
-                    const date = new Date(d);
-                    return dayNames[date.getDay()];
-                });
+                labelIndices = keys.map((_, i) => i);
             } else {
-                // Show date labels for 30D/90D
-                const step = Math.ceil(keys.length / 6);
-                labels = keys
-                    .filter((_, i) => i % step === 0 || i === keys.length - 1)
-                    .map((d) => {
-                        const date = new Date(d);
-                        return `${date.getMonth() + 1}/${date.getDate()}`;
-                    });
+                const step = Math.ceil((numPoints - 1) / 5);
+                for (let i = 0; i < numPoints; i += step) labelIndices.push(i);
+                if (numPoints > 0 && labelIndices[labelIndices.length - 1] !== numPoints - 1) labelIndices.push(numPoints - 1);
             }
-            labelContainer.innerHTML = labels.map((l) => `<span>${l}</span>`).join("");
+
+            labelContainer.innerHTML = labelIndices.map(i => {
+                let l = keys[i];
+                if (days === 1) {
+                    l = `${l}:00`;
+                } else if (days <= 7) {
+                    const d = new Date(l);
+                    const dayNames = [t("sun"), t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat")];
+                    l = dayNames[d.getDay()];
+                } else {
+                    const d = new Date(l);
+                    l = `${d.getMonth() + 1}/${d.getDate()}`;
+                }
+
+                const xPercent = numPoints === 1 ? 50 : ((paddingX + (i / (numPoints - 1)) * (width - 2 * paddingX)) / width) * 100;
+                return `<span class="absolute top-0 whitespace-nowrap" style="left: ${xPercent}%; transform: translateX(-50%);">${l}</span>`;
+            }).join("");
         }
     } catch (err) {
         console.warn("History chart error:", err);
@@ -330,9 +339,10 @@ function renderDrillDown(dateStr, hourlyData, isDark, color) {
     const width = 300;
     const height = 120;
     const padding = 10;
+    const paddingX = 15;
 
     const points = values.map((v, i) => {
-        const x = values.length === 1 ? width / 2 : (i / (values.length - 1)) * width;
+        const x = values.length === 1 ? width / 2 : paddingX + (i / (values.length - 1)) * (width - 2 * paddingX);
         const y = padding + ((max - v) / range) * (height - 2 * padding);
         return { x, y };
     });
@@ -409,9 +419,17 @@ function renderDrillDown(dateStr, hourlyData, isDark, color) {
         }, { passive: false });
     });
 
-    const hours = hourlyData.map(d => d.hour);
-    const labelHours = hours.length <= 6 ? hours : hours.filter((_, i) => i === 0 || i === hours.length - 1 || i % Math.ceil(hours.length / 4) === 0);
-    labelsDiv.innerHTML = labelHours.map((h) => `<span>${h}:00</span>`).join("");
+    const numPoints = hourlyData.length;
+    let labelIndices = [];
+    const step = Math.ceil((numPoints - 1) / 4);
+    for (let i = 0; i < numPoints; i += step) labelIndices.push(i);
+    if (numPoints > 0 && labelIndices[labelIndices.length - 1] !== numPoints - 1) labelIndices.push(numPoints - 1);
+
+    labelsDiv.innerHTML = labelIndices.map((i) => {
+        const h = hourlyData[i].hour;
+        const xPercent = numPoints === 1 ? 50 : ((paddingX + (i / (numPoints - 1)) * (width - 2 * paddingX)) / width) * 100;
+        return `<span class="absolute top-0 whitespace-nowrap" style="left: ${xPercent}%; transform: translateX(-50%);">${h}:00</span>`;
+    }).join("");
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
