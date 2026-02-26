@@ -71,6 +71,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 let ws;
 let reconnectDelay = 1000;
 const MAX_RECONNECT_DELAY = 30000;
+let pingInterval;
 
 function setupWebSocket() {
     // Prevent multiple connections
@@ -82,9 +83,18 @@ function setupWebSocket() {
     ws.onopen = () => {
         console.log("WebSocket connected");
         reconnectDelay = 1000; // Reset backoff on success
+
+        // Start pinging every 30s to keep connection alive
+        pingInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send("ping");
+            }
+        }, 30000);
     };
 
     ws.onmessage = (event) => {
+        if (event.data === "pong") return; // Ignore heartbeat responses
+
         try {
             const data = JSON.parse(event.data);
 
@@ -107,6 +117,7 @@ function setupWebSocket() {
 
     ws.onclose = () => {
         console.log(`WebSocket closed. Reconnecting in ${reconnectDelay}ms...`);
+        clearInterval(pingInterval);
         setTimeout(setupWebSocket, reconnectDelay);
         reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
     };

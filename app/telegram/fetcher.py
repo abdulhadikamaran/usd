@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
+from telethon.sessions import StringSession
+
 class TelegramFetcher:
     """
     Wraps the Telethon client for fetching messages from the rate channel.
@@ -39,13 +41,11 @@ class TelegramFetcher:
 
     async def connect(self) -> None:
         """
-        Connect to Telegram using the saved session file.
-        Must have run scripts/auth.py first to create the session.
+        Connect to Telegram using the saved session string.
+        Must have run scripts/auth.py first to create the session string.
         """
-        session_path = str(_PROJECT_ROOT / settings.SESSION_NAME)
-
         self._client = TelegramClient(
-            session_path,
+            StringSession(settings.TELEGRAM_SESSION_STRING),
             settings.TELEGRAM_API_ID,
             settings.TELEGRAM_API_HASH,
         )

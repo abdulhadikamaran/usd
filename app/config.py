@@ -29,8 +29,7 @@ class Settings:
     TELEGRAM_CHANNEL: str = os.getenv("TELEGRAM_CHANNEL", "@iraqborsa")
 
     # ── Session ───────────────────────────────────────────────────────
-    SESSION_NAME: str = "erbil_rate_session"
-    SESSION_PATH: Path = PROJECT_ROOT / SESSION_NAME
+    TELEGRAM_SESSION_STRING: str = os.getenv("TELEGRAM_SESSION_STRING", "")
 
     # ── Scheduler ─────────────────────────────────────────────────────
     FETCH_INTERVAL_SECONDS: int = 300  # 5 minutes
@@ -73,8 +72,8 @@ class Settings:
             errors.append("TELEGRAM_API_ID is not set in .env")
         if not self.TELEGRAM_API_HASH:
             errors.append("TELEGRAM_API_HASH is not set in .env")
-        if not self.TELEGRAM_PHONE:
-            errors.append("TELEGRAM_PHONE is not set in .env")
+        if not self.TELEGRAM_SESSION_STRING:
+            errors.append("TELEGRAM_SESSION_STRING is not set in .env")
         return errors
 
 
