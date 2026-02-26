@@ -16,8 +16,11 @@ import logging
 
 from app.config import settings
 from app import database as db
+from app.database import IRAQ_TZ
 from app.telegram.fetcher import TelegramFetcher
 from app.telegram.parser import MessageParser
+from app.ws_manager import manager
+from app.models import RateResponse
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +106,7 @@ async def run_fetch_cycle(
                 sur=result.sur_price,
                 average=result.average_price,
                 message_id=result.message_id,
+                created_at=msg.date.astimezone(IRAQ_TZ).isoformat(),
             )
 
             if row_id is not None:
@@ -117,6 +121,18 @@ async def run_fetch_cycle(
         # Refresh cache if we stored anything
         if stored_count > 0:
             await refresh_cache()
+            if _cached_rate:
+                rate_24h = await db.get_rate_24h_ago()
+                daily_change = _cached_rate["erbil_average"] - rate_24h["erbil_average"] if rate_24h else None
+                resp = RateResponse(
+                    city="Erbil",
+                    penzi=_cached_rate["erbil_penzi"],
+                    sur=_cached_rate["erbil_sur"],
+                    average=_cached_rate["erbil_average"],
+                    daily_change=daily_change,
+                    last_updated=_cached_rate["created_at"],
+                )
+                asyncio.create_task(manager.broadcast(resp.model_dump()))
 
         return stored_count
 
@@ -167,6 +183,7 @@ async def run_backfill(
                 sur=result.sur_price,
                 average=result.average_price,
                 message_id=result.message_id,
+                created_at=msg.date.astimezone(IRAQ_TZ).isoformat(),
             )
 
             if row_id is not None:

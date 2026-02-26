@@ -60,7 +60,7 @@ class Settings:
     MAX_ANOMALY_DEVIATION: int = 10_000  # Max allowed change from last rate
 
     # ── Backfill ──────────────────────────────────────────────────────
-    INITIAL_FETCH_COUNT: int = 50  # Messages to fetch on first run
+    INITIAL_FETCH_COUNT: int = 1500  # Messages to fetch on first run
 
     # ── Timezone ──────────────────────────────────────────────────────
     TIMEZONE: str = "Asia/Baghdad"  # UTC+3, Iraq time

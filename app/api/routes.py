@@ -6,7 +6,8 @@ call the database, apply formulas, and return Pydantic models.
 Zero business logic lives here.
 """
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, WebSocket, WebSocketDisconnect
+from app.ws_manager import manager
 
 from app import database as db
 from app.models import (
@@ -37,13 +38,29 @@ async def get_latest_rate():
             status_code=503,
             detail={"error": "No exchange rate data available yet.", "code": "NO_DATA"},
         )
+    rate_24h = await db.get_rate_24h_ago()
+    daily_change = rate["erbil_average"] - rate_24h["erbil_average"] if rate_24h else None
+
     return RateResponse(
         city="Erbil",
         penzi=rate["erbil_penzi"],
         sur=rate["erbil_sur"],
         average=rate["erbil_average"],
+        daily_change=daily_change,
         last_updated=rate["created_at"],
     )
+
+
+# ── WS /api/ws ────────────────────────────────────────────────────────
+
+@router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 
 # ── GET /api/convert/usd-to-iqd ──────────────────────────────────────
@@ -138,10 +155,10 @@ async def get_rate_history(
     rates = [
         RateResponse(
             city="Erbil",
-            penzi=r["erbil_penzi"],
-            sur=r["erbil_sur"],
-            average=r["erbil_average"],
-            last_updated=r["created_at"],
+            penzi=r["penzi"],
+            sur=r["sur"],
+            average=r["average"],
+            last_updated=r["last_updated"],
         )
         for r in history
     ]

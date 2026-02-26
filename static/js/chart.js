@@ -8,121 +8,13 @@ import { t } from "./i18n.js";
 
 const API_BASE = "/api";
 
-// ── Today's hourly chart ─────────────────────────────────────────────
-
-export async function renderTodayChart() {
-    const container = document.getElementById("today-chart");
-    const labelContainer = document.getElementById("today-labels");
-    const rateDisplay = document.getElementById("today-rate");
-    const changeDisplay = document.getElementById("today-change");
-
-    if (!container) return;
-
-    try {
-        const res = await fetch(`${API_BASE}/rate/history?days=1`);
-        if (!res.ok) throw new Error("API error");
-        const data = await res.json();
-
-        if (!data.rates || data.rates.length === 0) {
-            container.innerHTML = `<p class="text-center text-slate-400 py-8">${t("no_data")}</p>`;
-            return;
-        }
-
-        // Group by hour
-        const hourly = groupByHour(data.rates);
-        const hours = Object.keys(hourly).sort();
-
-        if (hours.length === 0) {
-            container.innerHTML = `<p class="text-center text-slate-400 py-8">${t("no_data")}</p>`;
-            return;
-        }
-
-        const values = hours.map((h) => hourly[h]);
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        const range = max - min || 1;
-
-        // Update rate display
-        const latest = values[values.length - 1];
-        const first = values[0];
-        const diff = latest - first;
-
-        if (rateDisplay) rateDisplay.textContent = latest.toLocaleString();
-        if (changeDisplay) {
-            const pct = ((diff / first) * 100).toFixed(2);
-            const sign = diff >= 0 ? "+" : "";
-            changeDisplay.textContent = `${sign}${pct}%`;
-            changeDisplay.className = changeDisplay.className.replace(
-                /text-(green|red)-500/g,
-                ""
-            );
-            changeDisplay.classList.add(diff >= 0 ? "text-green-500" : "text-red-500");
-            // Update background
-            changeDisplay.className = changeDisplay.className.replace(
-                /bg-(green|red)-500\/10/g,
-                ""
-            );
-            changeDisplay.classList.add(
-                diff >= 0 ? "bg-green-500/10" : "bg-red-500/10"
-            );
-        }
-
-        // Build SVG path
-        const width = 300;
-        const height = 120;
-        const padding = 10;
-        const points = values.map((v, i) => {
-            const x = values.length === 1 ? width / 2 : (i / (values.length - 1)) * width;
-            const y = padding + ((max - v) / range) * (height - 2 * padding);
-            return { x, y };
-        });
-
-        const pathD = buildSmoothPath(points);
-        const fillD = `${pathD} V${height} H0 Z`;
-        const lastP = points[points.length - 1];
-
-        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const color = isDark ? "#f0b429" : "#2563eb";
-        const gradId = "gradientToday";
-
-        container.innerHTML = `
-      <svg class="w-full h-full overflow-visible" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${color}" stop-opacity="0.2"/>
-            <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <path d="${fillD}" fill="url(#${gradId})"/>
-        <path d="${pathD}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="${lastP.x}" cy="${lastP.y}" r="4" fill="${color}" stroke="${isDark ? "#1a242e" : "#ffffff"}" stroke-width="2"/>
-      </svg>
-    `;
-
-        // Labels
-        if (labelContainer) {
-            const labelHours =
-                hours.length <= 6
-                    ? hours
-                    : hours.filter(
-                        (_, i) => i === 0 || i === hours.length - 1 || i % Math.ceil(hours.length / 4) === 0
-                    );
-            labelContainer.innerHTML = labelHours
-                .map((h) => `<span>${h}:00</span>`)
-                .join("");
-        }
-    } catch (err) {
-        console.warn("Today chart error:", err);
-        if (container)
-            container.innerHTML = `<p class="text-center text-slate-400 py-8">${t("no_data")}</p>`;
-    }
-}
+// ── Today's hourly chart (Removed) ───────────────────────────────────
 
 // ── History chart ────────────────────────────────────────────────────
 
-let currentHistoryDays = 7;
+let currentHistoryDays = 1;
 
-export async function renderHistoryChart(days = 7) {
+export async function renderHistoryChart(days = 1) {
     currentHistoryDays = days;
     const container = document.getElementById("history-chart");
     const labelContainer = document.getElementById("history-labels");
@@ -148,10 +40,47 @@ export async function renderHistoryChart(days = 7) {
             return;
         }
 
-        // Group by day
-        const daily = groupByDay(rates);
-        const days_keys = Object.keys(daily).sort();
-        const values = days_keys.map((d) => daily[d]);
+        // Hide drilldown initially
+        document.getElementById("hourly-drilldown")?.classList.add("hidden");
+
+        // Use DB aggregated data directly
+        const keys = [];
+        const values = [];
+        const sortedRates = [...rates].reverse(); // oldest first
+        const dailyDrillData = {};
+
+        if (days === 1) {
+            for (const r of sortedRates) {
+                values.push(r.average);
+                keys.push(new Date(r.last_updated).getHours().toString().padStart(2, '0'));
+            }
+        } else if (days <= 7) {
+            // Group the hourly DB data into daily averages for the top chart
+            const daily = {};
+            const counts = {};
+            for (const r of sortedRates) {
+                const dateStr = r.last_updated.split("T")[0];
+                const hourStr = new Date(r.last_updated).getHours().toString().padStart(2, '0');
+                if (!daily[dateStr]) {
+                    daily[dateStr] = 0;
+                    counts[dateStr] = 0;
+                    dailyDrillData[dateStr] = [];
+                }
+                daily[dateStr] += r.average;
+                counts[dateStr]++;
+                dailyDrillData[dateStr].push({ hour: hourStr, average: r.average });
+            }
+            for (const d in daily) {
+                keys.push(d);
+                values.push(Math.round(daily[d] / counts[d]));
+            }
+        } else {
+            // Already daily average
+            for (const r of sortedRates) {
+                values.push(r.average);
+                keys.push(r.last_updated.split("T")[0]);
+            }
+        }
 
         const min = Math.min(...values);
         const max = Math.max(...values);
@@ -159,6 +88,25 @@ export async function renderHistoryChart(days = 7) {
 
         if (highEl) highEl.textContent = max.toLocaleString();
         if (lowEl) lowEl.textContent = min.toLocaleString();
+
+        // Update High/Low labels based on selected period
+        const highLabel = document.getElementById("history-high-label");
+        const lowLabel = document.getElementById("history-low-label");
+        if (highLabel && lowLabel) {
+            if (days === 1) {
+                highLabel.textContent = t("daily_high");
+                lowLabel.textContent = t("daily_low");
+            } else if (days <= 7) {
+                highLabel.textContent = t("weekly_high");
+                lowLabel.textContent = t("weekly_low");
+            } else if (days <= 30) {
+                highLabel.textContent = t("monthly_high");
+                lowLabel.textContent = t("monthly_low");
+            } else {
+                highLabel.textContent = t("period_high");
+                lowLabel.textContent = t("period_low");
+            }
+        }
 
         // Build SVG
         const width = 300;
@@ -172,23 +120,50 @@ export async function renderHistoryChart(days = 7) {
         });
 
         const pathD = buildSmoothPath(points);
-        const lastP = points[points.length - 1];
-
-        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const isDark = document.documentElement.classList.contains("dark");
         const color = isDark ? "#f0b429" : "#2563eb";
 
-        // Grid lines
+        // Grid lines at 25%, 50%, 75% height
         const gridLines = [0.25, 0.5, 0.75].map(
             (f) =>
                 `<line x1="0" y1="${f * height}" x2="${width}" y2="${f * height}" stroke="${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}" stroke-dasharray="4,4"/>`
         ).join("");
 
-        // Data point circles
+        // Y-axis price labels — exact values
+        const yAxisEl = document.getElementById("history-y-axis");
+        if (yAxisEl) {
+            const mid = Math.round(min + range / 2);
+            yAxisEl.innerHTML = `
+              <span class="text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-none">${max.toLocaleString()}</span>
+              <span class="text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-none">${mid.toLocaleString()}</span>
+              <span class="text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-none">${min.toLocaleString()}</span>
+            `;
+        }
+
+        // Data point circles — no CSS transforms (they break with preserveAspectRatio="none")
         const circles = points
-            .map(
-                (p, i) =>
-                    `<circle cx="${p.x}" cy="${p.y}" r="${i === points.length - 1 ? 5 : 3}" fill="${i === points.length - 1 ? color : (isDark ? "#1a242e" : "#ffffff")}" stroke="${color}" stroke-width="2"/>`
-            )
+            .map((p, i) => {
+                const r = i === points.length - 1 ? 5 : 4;
+                const fill = i === points.length - 1 ? color : (isDark ? "#1a242e" : "#ffffff");
+
+                // Tooltip data
+                const val = values[i].toLocaleString();
+                let label = keys[i];
+                if (days === 1) {
+                    label = `${label}:00`;
+                } else if (days <= 7) {
+                    const d = new Date(keys[i]);
+                    const dayNames = [t("sun"), t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat")];
+                    label = `${dayNames[d.getDay()]} ${d.getMonth() + 1}/${d.getDate()}`;
+                } else {
+                    const d = new Date(keys[i]);
+                    label = `${d.getMonth() + 1}/${d.getDate()}`;
+                }
+
+                // Visible circle + invisible fat touch target (no transforms!)
+                return `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${color}" stroke-width="2" class="pointer-events-none" />
+                        <circle cx="${p.x}" cy="${p.y}" r="12" fill="transparent" stroke="transparent" data-idx="${i}" data-val="${val}" data-lbl="${label}" class="chart-point" style="cursor:pointer;" />`;
+            })
             .join("");
 
         container.innerHTML = `
@@ -197,22 +172,90 @@ export async function renderHistoryChart(days = 7) {
         <path d="${pathD}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round"/>
         ${circles}
       </svg>
+      <div id="chart-tooltip" class="absolute pointer-events-none opacity-0 transition-opacity duration-150 bg-slate-900/95 dark:bg-black/95 text-white text-[11px] py-2 px-3 rounded-lg shadow-xl border border-white/10 z-50 whitespace-nowrap" style="transform: translate(-50%, -100%); margin-top: -12px;">
+          <span id="tooltip-val" class="font-bold text-primary"></span>
+          <span class="mx-1 text-slate-500">·</span>
+          <span id="tooltip-label" class="text-slate-300"></span>
+      </div>
     `;
 
-        // Day labels
+        // Tooltip positioning using getBoundingClientRect (pixel-perfect on all screens)
+        const tooltip = container.querySelector("#chart-tooltip");
+        const tVal = container.querySelector("#tooltip-val");
+        const tLbl = container.querySelector("#tooltip-label");
+        const svg = container.querySelector("svg");
+
+        container.querySelectorAll("circle.chart-point").forEach(c => {
+            const show = () => {
+                if (!tooltip || !tVal || !tLbl || !svg) return;
+                tVal.textContent = c.getAttribute("data-val");
+                tLbl.textContent = c.getAttribute("data-lbl");
+
+                // Convert SVG coords to container pixel coords
+                const svgRect = svg.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                const cx = parseFloat(c.getAttribute("cx"));
+                const cy = parseFloat(c.getAttribute("cy"));
+                const pixelX = (cx / width) * svgRect.width + (svgRect.left - containerRect.left);
+                const pixelY = (cy / height) * svgRect.height + (svgRect.top - containerRect.top);
+
+                // Prevent tooltip from getting cut off on edges
+                if (pixelX > containerRect.width - 60) {
+                    tooltip.style.transform = "translate(calc(-100% + 8px), -100%)";
+                } else if (pixelX < 60) {
+                    tooltip.style.transform = "translate(-8px, -100%)";
+                } else {
+                    tooltip.style.transform = "translate(-50%, -100%)";
+                }
+
+                tooltip.style.left = `${pixelX}px`;
+                tooltip.style.top = `${pixelY}px`;
+                tooltip.style.opacity = "1";
+            };
+
+            const hide = () => { if (tooltip) tooltip.style.opacity = "0"; };
+
+            c.addEventListener("mouseenter", show);
+            c.addEventListener("mouseleave", hide);
+            c.addEventListener("touchstart", (e) => {
+                e.preventDefault();
+                show();
+                // Auto-hide after 2s on mobile
+                setTimeout(hide, 2000);
+            }, { passive: false });
+        });
+
+        // 7D drilldown click
+        if (days === 7) {
+            container.querySelectorAll("circle.chart-point").forEach(c => {
+                c.addEventListener("click", () => {
+                    const idx = c.getAttribute("data-idx");
+                    const dateKey = keys[idx];
+                    if (dailyDrillData[dateKey]) {
+                        renderDrillDown(dateKey, dailyDrillData[dateKey], isDark, color);
+                    }
+                });
+            });
+        }
+
         if (labelContainer) {
-            const dayNames = [t("sun"), t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat")];
             let labels;
-            if (days <= 7) {
-                labels = days_keys.map((d) => {
+            if (days === 1) {
+                const labelHours = keys.length <= 6
+                    ? keys
+                    : keys.filter((_, i) => i === 0 || i === keys.length - 1 || i % Math.ceil(keys.length / 4) === 0);
+                labels = labelHours.map(h => `${h}:00`);
+            } else if (days <= 7) {
+                const dayNames = [t("sun"), t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat")];
+                labels = keys.map((d) => {
                     const date = new Date(d);
                     return dayNames[date.getDay()];
                 });
             } else {
                 // Show date labels for 30D/90D
-                const step = Math.ceil(days_keys.length / 6);
-                labels = days_keys
-                    .filter((_, i) => i % step === 0 || i === days_keys.length - 1)
+                const step = Math.ceil(keys.length / 6);
+                labels = keys
+                    .filter((_, i) => i % step === 0 || i === keys.length - 1)
                     .map((d) => {
                         const date = new Date(d);
                         return `${date.getMonth() + 1}/${date.getDate()}`;
@@ -254,39 +297,126 @@ export function initHistoryTabs() {
             renderHistoryChart(days);
         });
     });
+
+    const closeBtn = document.getElementById("close-drilldown");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+            document.getElementById("hourly-drilldown")?.classList.add("hidden");
+        });
+    }
+}
+
+function renderDrillDown(dateStr, hourlyData, isDark, color) {
+    const drillContainer = document.getElementById("hourly-drilldown");
+    const chartDiv = document.getElementById("drilldown-chart");
+    const labelsDiv = document.getElementById("drilldown-labels");
+    const titleSpan = document.getElementById("drilldown-title");
+
+    if (!drillContainer || !chartDiv || !labelsDiv) return;
+
+    titleSpan.textContent = dateStr;
+    drillContainer.classList.remove("hidden");
+
+    if (hourlyData.length === 0) {
+        chartDiv.innerHTML = `<p class="text-center text-slate-400 py-4">${t("no_data")}</p>`;
+        return;
+    }
+
+    const values = hourlyData.map(d => d.average);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+
+    const width = 300;
+    const height = 120;
+    const padding = 10;
+
+    const points = values.map((v, i) => {
+        const x = values.length === 1 ? width / 2 : (i / (values.length - 1)) * width;
+        const y = padding + ((max - v) / range) * (height - 2 * padding);
+        return { x, y };
+    });
+
+    const pathD = buildSmoothPath(points);
+    const fillD = `${pathD} V${height} H0 Z`;
+
+    const gradId = "gradientDrilldown";
+
+    const circlesHTML = points.map((p, i) => {
+        const val = values[i].toLocaleString();
+        const lbl = `${hourlyData[i].hour}:00`;
+        return `<circle cx="${p.x}" cy="${p.y}" r="3" fill="${color}" stroke="${color}" stroke-width="1" class="pointer-events-none" />
+                <circle cx="${p.x}" cy="${p.y}" r="10" fill="transparent" stroke="transparent" data-val="${val}" data-lbl="${lbl}" class="drilldown-point" style="cursor:pointer;" />`;
+    }).join("");
+
+    chartDiv.innerHTML = `
+      <svg class="w-full h-full overflow-visible" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${color}" stop-opacity="0.2"/>
+            <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${fillD}" fill="url(#${gradId})"/>
+        <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+        ${circlesHTML}
+      </svg>
+      <div id="drilldown-tooltip" class="absolute pointer-events-none opacity-0 transition-opacity duration-150 bg-slate-900/95 dark:bg-black/95 text-white text-[11px] py-2 px-3 rounded-lg shadow-xl border border-white/10 z-50 whitespace-nowrap" style="transform: translate(-50%, -100%); margin-top: -12px;">
+          <span id="dt-val" class="font-bold text-primary"></span>
+          <span class="mx-1 text-slate-500">·</span>
+          <span id="dt-lbl" class="text-slate-300"></span>
+      </div>
+    `;
+
+    const dTooltip = chartDiv.querySelector("#drilldown-tooltip");
+    const dtVal = chartDiv.querySelector("#dt-val");
+    const dtLbl = chartDiv.querySelector("#dt-lbl");
+    const ddSvg = chartDiv.querySelector("svg");
+
+    chartDiv.querySelectorAll("circle.drilldown-point").forEach((c) => {
+        const show = () => {
+            if (!dTooltip || !dtVal || !dtLbl || !ddSvg) return;
+            dtVal.textContent = c.getAttribute("data-val");
+            dtLbl.textContent = c.getAttribute("data-lbl");
+
+            const svgRect = ddSvg.getBoundingClientRect();
+            const containerRect = chartDiv.getBoundingClientRect();
+            const cx = parseFloat(c.getAttribute("cx"));
+            const cy = parseFloat(c.getAttribute("cy"));
+            const pixelX = (cx / width) * svgRect.width + (svgRect.left - containerRect.left);
+            const pixelY = (cy / height) * svgRect.height + (svgRect.top - containerRect.top);
+
+            // Prevent tooltip from getting cut off on edges
+            if (pixelX > containerRect.width - 60) {
+                dTooltip.style.transform = "translate(calc(-100% + 8px), -100%)";
+            } else if (pixelX < 60) {
+                dTooltip.style.transform = "translate(-8px, -100%)";
+            } else {
+                dTooltip.style.transform = "translate(-50%, -100%)";
+            }
+
+            dTooltip.style.left = `${pixelX}px`;
+            dTooltip.style.top = `${pixelY}px`;
+            dTooltip.style.opacity = "1";
+        };
+        const hide = () => { if (dTooltip) dTooltip.style.opacity = "0"; };
+        c.addEventListener("mouseenter", show);
+        c.addEventListener("mouseleave", hide);
+        c.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            show();
+            setTimeout(hide, 2000);
+        }, { passive: false });
+    });
+
+    const hours = hourlyData.map(d => d.hour);
+    const labelHours = hours.length <= 6 ? hours : hours.filter((_, i) => i === 0 || i === hours.length - 1 || i % Math.ceil(hours.length / 4) === 0);
+    labelsDiv.innerHTML = labelHours.map((h) => `<span>${h}:00</span>`).join("");
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-function groupByHour(rates) {
-    const hourly = {};
-    // rates are newest-first, reverse to process oldest first
-    for (const r of [...rates].reverse()) {
-        const date = new Date(r.last_updated);
-        const h = date.getHours();
-        hourly[h] = r.average; // last value per hour wins
-    }
-    return hourly;
-}
-
-function groupByDay(rates) {
-    const daily = {};
-    const counts = {};
-    for (const r of rates) {
-        const d = r.last_updated.split("T")[0];
-        if (!daily[d]) {
-            daily[d] = 0;
-            counts[d] = 0;
-        }
-        daily[d] += r.average;
-        counts[d]++;
-    }
-    // Average per day
-    for (const d in daily) {
-        daily[d] = Math.round(daily[d] / counts[d]);
-    }
-    return daily;
-}
+// Helper removed since DB handles aggregations
 
 function buildSmoothPath(points) {
     if (points.length === 0) return "";

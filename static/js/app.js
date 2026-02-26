@@ -11,11 +11,7 @@ import {
     getCacheAge,
 } from "./cache.js";
 import { init as initConverter, setRate, formatNumber } from "./converter.js";
-import {
-    renderTodayChart,
-    renderHistoryChart,
-    initHistoryTabs,
-} from "./chart.js";
+import { renderHistoryChart, initHistoryTabs } from "./chart.js";
 
 const API_BASE = "/api";
 
@@ -37,9 +33,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         initConverter(cached.average);
     }
 
-    // Setup navigation
+    // Setup navigation & controls
     setupNavigation();
     setupLangToggle();
+    setupThemeToggle();
 
     // Fetch fresh data if stale
     if (isCacheStale()) {
@@ -49,23 +46,71 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Render charts if on analytics page
     // (deferred until user navigates there)
 
-    // Background refresh every 60min
-    setInterval(async () => {
-        if (isCacheStale()) {
-            await fetchAndDisplayRate();
-        }
-    }, 60 * 60 * 1000);
-
-    // Refresh on tab focus if stale
+    // Refresh on tab focus
     document.addEventListener("visibilitychange", async () => {
-        if (!document.hidden && isCacheStale()) {
-            await fetchAndDisplayRate();
+        if (!document.hidden) {
+            if (isCacheStale()) {
+                await fetchAndDisplayRate();
+            }
+            if (!ws || ws.readyState === WebSocket.CLOSED) {
+                reconnectDelay = 1000;
+                setupWebSocket();
+            }
         }
     });
+
+    // Setup WebSockets for extreme real-time
+    setupWebSocket();
 
     // Apply translations
     applyTranslations();
 });
+
+// ── WebSockets ───────────────────────────────────────────────────────
+
+let ws;
+let reconnectDelay = 1000;
+const MAX_RECONNECT_DELAY = 30000;
+
+function setupWebSocket() {
+    // Prevent multiple connections
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${window.location.host}/api/ws`);
+
+    ws.onopen = () => {
+        console.log("WebSocket connected");
+        reconnectDelay = 1000; // Reset backoff on success
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+
+            // Reformat as expected by the UI
+            const rateData = {
+                average: data.average,
+                penzi: data.penzi,
+                sur: data.sur,
+                daily_change: data.daily_change,
+                last_updated: data.last_updated,
+            };
+
+            setCachedRate(rateData);
+            displayRate(rateData);
+            initConverter(data.average);
+        } catch (err) {
+            console.error("WS parsing error:", err);
+        }
+    };
+
+    ws.onclose = () => {
+        console.log(`WebSocket closed. Reconnecting in ${reconnectDelay}ms...`);
+        setTimeout(setupWebSocket, reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
+    };
+}
 
 // ── API Fetch ────────────────────────────────────────────────────────
 
@@ -75,14 +120,12 @@ async function fetchAndDisplayRate() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        // Calculate diff from previous
-        const prev = getCachedRate();
         const rateData = {
             average: data.average,
             penzi: data.penzi,
             sur: data.sur,
+            daily_change: data.daily_change,
             last_updated: data.last_updated,
-            previous_average: prev ? prev.average : data.average,
         };
 
         setCachedRate(rateData);
@@ -114,10 +157,19 @@ function displayRate(data) {
     }
 
     // Direction indicator
-    if (diffEl && data.previous_average) {
-        const diff = data.average - data.previous_average;
-        const sign = diff >= 0 ? "+" : "";
-        diffEl.textContent = `${sign}${formatNumber(diff)}`;
+    if (diffEl && data.daily_change !== undefined && data.daily_change !== null) {
+        const diff = data.daily_change;
+        const sign = diff > 0 ? "+" : "";
+
+        let percentText = "";
+        const prevAvg = data.average - diff;
+        if (prevAvg > 0) {
+            const pct = (diff / prevAvg) * 100;
+            const pctSign = pct > 0 ? "+" : "";
+            percentText = ` (${pctSign}${pct.toFixed(2)}%)`;
+        }
+
+        diffEl.textContent = `${sign}${formatNumber(diff)}${percentText}`;
 
         // Remove old color classes
         const parent = diffEl.closest("[data-diff-container]");
@@ -203,8 +255,7 @@ function showPage(page) {
         setNavActive(navHome, false);
         setNavActive(navAnalytics, true);
         // Load charts
-        renderTodayChart();
-        renderHistoryChart(7);
+        renderHistoryChart(1);
         initHistoryTabs();
     }
 }
@@ -234,6 +285,27 @@ function setupLangToggle() {
     btn.addEventListener("click", () => {
         toggleLang();
         applyTranslations();
+    });
+}
+
+// ── Theme Toggle ────────────────────────────────────────────────────
+
+function setupThemeToggle() {
+    // Restore saved theme
+    const saved = localStorage.getItem("theme");
+    if (saved === "light") {
+        document.documentElement.classList.remove("dark");
+    } else if (saved === "dark") {
+        document.documentElement.classList.add("dark");
+    }
+    // else: follow system default (CSS handles via prefers-color-scheme)
+
+    const btn = document.getElementById("theme-toggle");
+    if (!btn) return;
+
+    btn.addEventListener("click", () => {
+        const isDark = document.documentElement.classList.toggle("dark");
+        localStorage.setItem("theme", isDark ? "dark" : "light");
     });
 }
 

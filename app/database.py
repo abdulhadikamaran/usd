@@ -91,6 +91,7 @@ async def insert_rate(
     sur: int,
     average: int,
     message_id: str,
+    created_at: str | None = None,
 ) -> int | None:
     """
     Insert a new exchange rate record.
@@ -99,13 +100,16 @@ async def insert_rate(
     (duplicate source_message_id).
     """
     db = _get_db()
+    
+    timestamp = created_at if created_at else _now_iraq()
+    
     try:
         cursor = await db.execute(
             """
             INSERT INTO exchange_rates (erbil_penzi, erbil_sur, erbil_average, source_message_id, created_at)
             VALUES (?, ?, ?, ?, ?)
             """,
-            (penzi, sur, average, message_id, _now_iraq()),
+            (penzi, sur, average, message_id, timestamp),
         )
         await db.commit()
         logger.info(
@@ -135,6 +139,33 @@ async def get_latest_rate() -> dict | None:
     if row is None:
         return None
     return dict(row)
+
+
+async def get_rate_24h_ago() -> dict | None:
+    """
+    Get the final exchange rate from yesterday (the market close price).
+    Returns the most recent rate strictly before today's date.
+    """
+    db = _get_db()
+    
+    # Get the start of today in Iraq timezone
+    today_str = datetime.now(IRAQ_TZ).strftime("%Y-%m-%d")
+    
+    # Try finding the latest rate that is older than today (i.e. yesterday's close)
+    cursor = await db.execute(
+        "SELECT * FROM exchange_rates WHERE substr(created_at, 1, 10) < ? ORDER BY created_at DESC LIMIT 1",
+        (today_str,)
+    )
+    row = await cursor.fetchone()
+    
+    # If no rates from before today exist (e.g. newly created DB), grab the absolute oldest rate we have
+    if not row:
+        cursor2 = await db.execute("SELECT * FROM exchange_rates ORDER BY created_at ASC LIMIT 1")
+        row = await cursor2.fetchone()
+        await cursor2.close()
+        
+    await cursor.close()
+    return dict(row) if row else None
 
 
 async def get_last_stored_average() -> int | None:
@@ -171,14 +202,39 @@ async def get_rate_history(days: int = 7) -> list[dict]:
     db = _get_db()
     # Calculate cutoff time in Iraq timezone
     cutoff = (datetime.now(IRAQ_TZ) - timedelta(days=days)).isoformat()
-    cursor = await db.execute(
-        """
-        SELECT * FROM exchange_rates
-        WHERE created_at >= ?
-        ORDER BY created_at DESC
-        """,
-        (cutoff,),
-    )
+    
+    if days <= 7:
+        # Group by hour
+        cursor = await db.execute(
+            """
+            SELECT 
+                substr(created_at, 1, 13) || ':00:00+03:00' as last_updated,
+                CAST(ROUND(AVG(erbil_penzi)) AS INTEGER) as penzi,
+                CAST(ROUND(AVG(erbil_sur)) AS INTEGER) as sur,
+                CAST(ROUND(AVG(erbil_average)) AS INTEGER) as average
+            FROM exchange_rates
+            WHERE created_at >= ?
+            GROUP BY substr(created_at, 1, 13)
+            ORDER BY created_at DESC
+            """,
+            (cutoff,)
+        )
+    else:
+        # Group by day
+        cursor = await db.execute(
+            """
+            SELECT 
+                substr(created_at, 1, 10) || 'T12:00:00+03:00' as last_updated,
+                CAST(ROUND(AVG(erbil_penzi)) AS INTEGER) as penzi,
+                CAST(ROUND(AVG(erbil_sur)) AS INTEGER) as sur,
+                CAST(ROUND(AVG(erbil_average)) AS INTEGER) as average
+            FROM exchange_rates
+            WHERE created_at >= ?
+            GROUP BY substr(created_at, 1, 10)
+            ORDER BY created_at DESC
+            """,
+            (cutoff,)
+        )
     rows = await cursor.fetchall()
     return [dict(row) for row in rows]
 

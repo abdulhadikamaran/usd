@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ku" dir="rtl">
+<html lang="ku" dir="rtl" class="dark">
 
 <head>
     <meta charset="utf-8" />
@@ -22,7 +22,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script>
         tailwind.config = {
-            darkMode: "media",
+            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
@@ -50,21 +50,17 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        @media (prefers-color-scheme: light) {
-            .glass-panel {
-                background: rgba(255, 255, 255, 0.7);
-                border: 1px solid rgba(0, 0, 0, 0.06);
-            }
+        html:not(.dark) .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.06);
         }
 
         .glow-effect {
             box-shadow: 0 0 40px -10px rgba(240, 180, 40, 0.15);
         }
 
-        @media (prefers-color-scheme: light) {
-            .glow-effect {
-                box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
-            }
+        html:not(.dark) .glow-effect {
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
         }
 
         .no-scrollbar::-webkit-scrollbar {
@@ -97,31 +93,42 @@
 </head>
 
 <body
-    class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-slate-100 selection:bg-primary/30">
+    class="bg-background-light dark:bg-background-dark font-display antialiased h-[100dvh] w-screen flex flex-col overflow-hidden text-slate-900 dark:text-slate-100 selection:bg-primary/30">
 
     <!-- ═══ PAGE: HOME ═══ -->
-    <div id="page-home" class="flex-1 flex flex-col min-h-screen">
+    <div id="page-home" class="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
 
         <!-- Header -->
         <header
-            class="sticky top-0 z-50 flex items-center justify-between px-6 pt-12 pb-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-transparent dark:border-white/5">
+            class="shrink-0 z-50 flex items-center justify-between px-6 pt-10 pb-2 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
             <div class="flex items-center gap-3">
                 <h2 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="app_name">نرخی
                     دۆلار</h2>
             </div>
-            <button id="lang-toggle"
-                class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 transition-colors"
-                title="Switch language">
-                <img id="lang-flag" src="/static/flags/us.svg" alt="Language"
-                    class="w-6 h-4 rounded-sm object-cover shadow-sm">
-            </button>
+            <div class="flex items-center gap-2">
+                <button id="theme-toggle"
+                    class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 transition-colors"
+                    title="Toggle theme">
+                    <span
+                        class="material-symbols-outlined text-slate-600 dark:text-slate-300 text-[20px] dark:hidden">dark_mode</span>
+                    <span
+                        class="material-symbols-outlined text-slate-300 text-[20px] hidden dark:inline">light_mode</span>
+                </button>
+                <button id="lang-toggle"
+                    class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 transition-colors"
+                    title="Switch language">
+                    <img id="lang-flag" src="/static/flags/us.svg" alt="Language"
+                        class="w-6 h-4 rounded-sm object-cover shadow-sm">
+                </button>
+            </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="flex-1 flex flex-col items-center w-full max-w-md mx-auto px-6 pt-6 pb-28">
+        <!-- Main Content (scrollable if needed, clears footer) -->
+        <main
+            class="flex-1 flex flex-col items-center justify-center w-full max-w-md mx-auto px-6 overflow-hidden pb-[80px]">
 
             <!-- Rate Display -->
-            <div class="w-full flex flex-col items-center mb-10">
+            <div class="w-full flex flex-col items-center mb-5">
                 <div class="flex items-center gap-2 mb-2">
                     <span
                         class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium"
@@ -144,9 +151,9 @@
             </div>
 
             <!-- Converter Card -->
-            <div class="w-full glass-panel glow-effect rounded-2xl p-5 relative mb-6">
+            <div class="w-full glass-panel glow-effect rounded-2xl p-4 relative flex flex-col gap-2">
                 <!-- USD Input -->
-                <div
+                <div id="usd-container" style="order: 1"
                     class="bg-slate-100 dark:bg-black/20 rounded-xl p-4 mb-1 border border-transparent focus-within:border-primary/50 transition-colors">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
@@ -156,11 +163,15 @@
                             <span class="text-xs font-bold text-slate-700 dark:text-slate-300">USD</span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-2xl font-medium text-slate-400">$</span>
+                    <div class="flex items-center gap-2 relative">
+                        <span class="text-2xl font-medium text-slate-400 pointer-events-none">$</span>
                         <input id="usd-input"
-                            class="w-full bg-transparent border-none p-0 text-3xl font-bold text-slate-900 dark:text-white focus:ring-0 focus:outline-none placeholder-slate-600"
-                            placeholder="0" type="number" value="100" />
+                            class="w-full bg-transparent border-none p-0 text-3xl font-bold text-slate-900 dark:text-white focus:ring-0 focus:outline-none placeholder-slate-600 ltr:pr-8 rtl:pl-8"
+                            placeholder="0" type="text" value="100" />
+                        <button id="usd-clear"
+                            class="hidden absolute ltr:right-0 rtl:left-0 top-1/2 -translate-y-1/2 p-2 px-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <span class="material-symbols-outlined text-xl">close</span>
+                        </button>
                     </div>
                 </div>
 
@@ -174,7 +185,7 @@
                 </div>
 
                 <!-- IQD Output -->
-                <div
+                <div id="iqd-container" style="order: 2"
                     class="bg-slate-100 dark:bg-black/20 rounded-xl p-4 mt-1 border border-transparent focus-within:border-primary/50 transition-colors">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
@@ -184,156 +195,113 @@
                             <span class="text-xs font-bold text-slate-700 dark:text-slate-300">IQD</span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 relative">
                         <input id="iqd-input"
-                            class="w-full bg-transparent border-none p-0 text-3xl font-bold text-primary focus:ring-0 focus:outline-none placeholder-slate-600 pointer-events-none"
+                            class="w-full bg-transparent border-none p-0 text-3xl font-bold text-primary focus:ring-0 focus:outline-none placeholder-slate-600 ltr:pr-8 rtl:pl-8 pointer-events-none"
                             placeholder="0" type="text" value="0" readonly />
+                        <button id="iqd-clear"
+                            class="hidden absolute ltr:right-0 rtl:left-0 top-1/2 -translate-y-1/2 p-2 px-3 text-primary hover:text-primary/80">
+                            <span class="material-symbols-outlined text-xl">close</span>
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Actions Grid -->
-            <div class="grid grid-cols-2 gap-3 w-full">
-                <button id="nav-to-analytics"
-                    class="flex flex-col items-start gap-2 p-4 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/5 shadow-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                    <div class="p-2 rounded-lg bg-primary/10 text-primary">
-                        <span class="material-symbols-outlined text-[20px]">analytics</span>
-                    </div>
-                    <div>
-                        <span class="block text-sm font-semibold text-slate-900 dark:text-white"
-                            data-i18n="analysis">شیکاری</span>
-                        <span class="block text-xs text-slate-500" data-i18n="market_trends">ڕەوتی بازاڕ</span>
-                    </div>
-                </button>
-                <button
-                    class="flex flex-col items-start gap-2 p-4 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/5 shadow-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                    <div class="p-2 rounded-lg bg-blue-500/10 text-blue-500">
-                        <span class="material-symbols-outlined text-[20px]">history</span>
-                    </div>
-                    <div>
-                        <span class="block text-sm font-semibold text-slate-900 dark:text-white"
-                            data-i18n="history">مێژوو</span>
-                        <span class="block text-xs text-slate-500" data-i18n="days_7">٧ ڕۆژ</span>
-                    </div>
-                </button>
-            </div>
         </main>
     </div>
 
     <!-- ═══ PAGE: ANALYTICS ═══ -->
-    <div id="page-analytics" class="hidden flex-1 flex flex-col min-h-screen">
+    <div id="page-analytics" class="hidden flex-1 flex flex-col h-full min-h-0 overflow-hidden">
 
         <!-- Analytics Header -->
         <header
-            class="sticky top-0 z-20 flex items-center justify-between px-4 py-3 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+            class="shrink-0 z-20 flex items-center justify-between px-4 pt-10 pb-2 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md">
             <button id="analytics-back"
                 class="p-2 -ml-2 rounded-full hover:bg-slate-200 dark:hover:bg-white/5 transition-colors">
                 <span class="material-symbols-outlined text-slate-700 dark:text-slate-200"
                     style="font-size: 24px;">arrow_back</span>
             </button>
-            <h1 class="text-lg font-bold text-center flex-1" data-i18n="analytics">شیکاری</h1>
+            <h1 class="text-lg font-bold text-center flex-1" data-i18n="history">مێژوو</h1>
             <div class="w-10"></div>
         </header>
 
         <!-- Analytics Content -->
-        <main class="flex-1 overflow-y-auto no-scrollbar pb-28">
+        <main class="flex-1 overflow-y-auto w-full max-w-md mx-auto px-4 py-2 pb-[80px]">
 
-            <!-- Today Section -->
-            <section class="px-4 py-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold" data-i18n="today">ئەمڕۆ</h2>
-                    <span id="today-change"
-                        class="text-xs font-medium px-2 py-1 rounded bg-green-500/10 text-green-500 border border-green-500/20">+0%</span>
-                </div>
-                <div
-                    class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
-                    <div class="flex flex-col mb-6">
-                        <span class="text-sm text-slate-500 dark:text-text-muted font-medium"
-                            data-i18n="iqd_usd_rate">نرخی IQD/USD</span>
-                        <div class="flex items-baseline gap-2 mt-1">
-                            <span id="today-rate"
-                                class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">---</span>
-                            <span class="text-sm font-medium text-slate-400 dark:text-text-muted"
-                                data-i18n="iqd">IQD</span>
-                        </div>
-                    </div>
-                    <!-- Hourly Chart -->
-                    <div class="relative h-[160px] w-full" id="today-chart">
-                        <p class="text-center text-slate-400 py-12">Loading...</p>
-                    </div>
-                    <!-- Time Labels -->
-                    <div id="today-labels"
-                        class="flex justify-between mt-4 text-[11px] font-medium text-slate-400 dark:text-text-muted uppercase tracking-wider">
-                    </div>
-                </div>
-            </section>
-
-            <!-- History Section -->
-            <section class="px-4 pb-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold" data-i18n="history">مێژوو</h2>
-                    <div class="flex bg-slate-100 dark:bg-slate-800/50 rounded-lg p-1">
+            <section class="flex flex-col gap-3 min-h-full">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-bold" data-i18n="history">مێژوو</h2>
+                    <div class="flex bg-slate-100 dark:bg-slate-800/50 rounded-lg p-1 gap-1">
+                        <button data-history-tab="1"
+                            class="px-3 py-1.5 text-xs font-semibold rounded bg-white dark:bg-primary text-slate-900 dark:text-background-dark shadow-sm"
+                            data-i18n="days_1">١ ڕۆژ</button>
                         <button data-history-tab="7"
-                            class="px-3 py-1 text-xs font-semibold rounded bg-white dark:bg-primary text-slate-900 dark:text-background-dark shadow-sm"
+                            class="px-3 py-1.5 text-xs font-semibold rounded text-slate-500 dark:text-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
                             data-i18n="days_7">٧ ڕۆژ</button>
                         <button data-history-tab="30"
-                            class="px-3 py-1 text-xs font-semibold rounded text-slate-500 dark:text-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
+                            class="px-3 py-1.5 text-xs font-semibold rounded text-slate-500 dark:text-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
                             data-i18n="days_30">٣٠ ڕۆژ</button>
                         <button data-history-tab="90"
-                            class="px-3 py-1 text-xs font-semibold rounded text-slate-500 dark:text-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
+                            class="px-3 py-1.5 text-xs font-semibold rounded text-slate-500 dark:text-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
                             data-i18n="days_90">٩٠ ڕۆژ</button>
                     </div>
                 </div>
 
                 <!-- History Chart Card -->
                 <div
-                    class="relative bg-white/50 dark:bg-surface-dark/60 backdrop-blur-xl rounded-2xl p-5 border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden">
+                    class="relative bg-white/50 dark:bg-surface-dark/60 backdrop-blur-xl rounded-2xl p-4 border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden flex flex-col">
                     <div
                         class="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none">
                     </div>
-                    <div class="flex justify-between items-end mb-6">
+                    <div class="flex justify-between items-end mb-3">
                         <div>
-                            <span class="text-xs text-slate-500 dark:text-text-muted font-medium block mb-1"
-                                data-i18n="weekly_high">بەرزترین هەفتانە</span>
+                            <span id="history-high-label"
+                                class="text-xs text-slate-500 dark:text-text-muted font-medium block mb-1"
+                                data-i18n="daily_high">بەرزترین ئەمڕۆ</span>
                             <span id="history-high" class="text-lg font-bold text-slate-900 dark:text-white">---</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-xs text-slate-500 dark:text-text-muted font-medium block mb-1"
-                                data-i18n="weekly_low">نزمترین هەفتانە</span>
+                            <span id="history-low-label"
+                                class="text-xs text-slate-500 dark:text-text-muted font-medium block mb-1"
+                                data-i18n="daily_low">نزمترین ئەمڕۆ</span>
                             <span id="history-low" class="text-lg font-bold text-slate-900 dark:text-white">---</span>
                         </div>
                     </div>
-                    <div id="history-chart" class="relative h-[200px] w-full">
-                        <p class="text-center text-slate-400 py-12">Loading...</p>
-                    </div>
-                    <div id="history-labels"
-                        class="flex justify-between mt-4 text-[10px] font-medium text-slate-400 dark:text-text-muted">
-                    </div>
-                </div>
-
-                <!-- Stats Grid -->
-                <div class="grid grid-cols-2 gap-3 mt-4">
-                    <div
-                        class="bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-                        <div class="flex items-center gap-2 mb-2">
-                            <div
-                                class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
-                                <span class="material-symbols-outlined text-sm">trending_up</span>
-                            </div>
-                            <span class="text-xs text-slate-500 dark:text-text-muted" data-i18n="trend">ڕەوت</span>
+                    <!-- Chart with Y-axis -->
+                    <div class="flex gap-0 w-full">
+                        <!-- Y-axis price labels -->
+                        <div id="history-y-axis" class="flex flex-col justify-between items-end pr-2 py-1 shrink-0"
+                            style="width: 52px;">
+                            <span
+                                class="text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-none">---</span>
+                            <span
+                                class="text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-none">---</span>
+                            <span
+                                class="text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-none">---</span>
                         </div>
-                        <p id="trend-label" class="font-bold text-sm" data-i18n="bullish">بەرزبوونەوە</p>
-                    </div>
-                    <div
-                        class="bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-                        <div class="flex items-center gap-2 mb-2">
-                            <div
-                                class="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
-                                <span class="material-symbols-outlined text-sm">show_chart</span>
+                        <!-- Chart area -->
+                        <div class="flex-1 min-w-0 flex flex-col">
+                            <div id="history-chart" class="relative h-[200px] w-full">
+                                <p class="text-center text-slate-400 py-12">Loading...</p>
                             </div>
-                            <span class="text-xs text-slate-500 dark:text-text-muted" data-i18n="volume">قەبارە</span>
+                            <div id="history-labels"
+                                class="flex justify-between mt-2 text-[10px] font-medium text-slate-400 dark:text-text-muted shrink-0">
+                            </div>
                         </div>
-                        <p class="font-bold text-sm" data-i18n="high">بەرز</p>
+                    </div>
+                    <!-- 7-Day Drilldown -->
+                    <div id="hourly-drilldown" class="hidden mt-6 pt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span id="drilldown-title"
+                                class="text-xs font-bold text-slate-700 dark:text-slate-300">---</span>
+                            <button id="close-drilldown"
+                                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-full"><span
+                                    class="material-symbols-outlined text-[16px]">close</span></button>
+                        </div>
+                        <div id="drilldown-chart" class="relative h-[120px] w-full"></div>
+                        <div id="drilldown-labels"
+                            class="flex justify-between mt-2 text-[10px] font-medium text-slate-400 dark:text-text-muted">
+                        </div>
                     </div>
                 </div>
             </section>
@@ -342,7 +310,7 @@
 
     <!-- ═══ BOTTOM NAVIGATION ═══ -->
     <nav
-        class="fixed bottom-0 w-full z-40 bg-background-light dark:bg-surface-dark border-t border-slate-200 dark:border-white/5 pb-6 pt-3 px-6">
+        class="fixed bottom-0 w-full z-40 bg-background-light dark:bg-surface-dark border-t border-slate-200 dark:border-white/5 pb-5 pt-3 px-6 h-[74px]">
         <div class="flex justify-between items-end max-w-md mx-auto">
             <a id="nav-home" href="#"
                 class="flex flex-col items-center justify-center gap-1 min-w-[64px] group text-primary">
@@ -358,7 +326,7 @@
                     class="flex items-center justify-center h-8 px-4 rounded-full transition-colors group-hover:bg-slate-200 dark:group-hover:bg-white/5">
                     <span class="material-symbols-outlined text-[24px]">monitoring</span>
                 </div>
-                <span class="text-xs font-medium mt-1" data-i18n="rates">نرخەکان</span>
+                <span class="text-xs font-medium mt-1" data-i18n="history">مێژوو</span>
             </a>
         </div>
     </nav>
@@ -368,25 +336,7 @@
     <!-- App JS (ES Module) -->
     <script type="module" src="/static/js/app.js"></script>
 
-    <!-- Quick action nav bridge -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const btn = document.getElementById('nav-to-analytics');
-            const histBtn = document.querySelector('[data-i18n="history"]');
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    document.getElementById('nav-analytics')?.click();
-                });
-            }
-            // History quick action also goes to analytics
-            const cards = document.querySelectorAll('.grid.grid-cols-2 button');
-            if (cards[1]) {
-                cards[1].addEventListener('click', () => {
-                    document.getElementById('nav-analytics')?.click();
-                });
-            }
-        });
-    </script>
+
 </body>
 
 </html>

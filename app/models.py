@@ -15,6 +15,7 @@ class RateResponse(BaseModel):
     penzi: int = Field(description="Penzi (پێنجی) price per 100 USD")
     sur: int = Field(description="Sur (سوور) price per 100 USD")
     average: int = Field(description="Average of Penzi and Sur")
+    daily_change: int | None = Field(default=None, description="Change in average compared to 24 hours ago")
     last_updated: str = Field(description="Timestamp in Iraq time (UTC+3)")
 
 

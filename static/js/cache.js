@@ -3,7 +3,7 @@
  */
 
 const CACHE_KEY = "usd_rate_cache";
-const STALE_MS = 60 * 60 * 1000; // 1 hour
+const STALE_MS = 15 * 1000; // 15 seconds
 
 export function getCachedRate() {
     try {
