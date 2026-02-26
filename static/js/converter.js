@@ -5,6 +5,7 @@
 
 let currentRate = 0; // average IQD per $100
 let isSwapped = false; // false = USD→IQD, true = IQD→USD
+let isInitialized = false;
 
 export function setRate(avg) {
     currentRate = avg;
@@ -33,9 +34,18 @@ export function init(rate) {
 
     if (!usdInput || !iqdInput) return;
 
-    // Set initial default to 100
-    usdInput.value = "100";
-    updateConversion();
+    // Set initial default to 100 only on first load
+    if (!isInitialized) {
+        usdInput.value = "100";
+    }
+
+    // Re-calculate math with the fresh background rate
+    if (isSwapped) updateReverseConversion();
+    else updateConversion();
+
+    // PREVENT duplicate event listeners breaking the Swap button!
+    if (isInitialized) return;
+    isInitialized = true;
 
     function handleInput(e, isReverse) {
         const cursor = e.target.selectionStart;

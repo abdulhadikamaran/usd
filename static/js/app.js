@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Fetch fresh data if stale
     if (isCacheStale()) {
-        await fetchAndDisplayRate();
+        fetchAndDisplayRate(); // Removed 'await' to let UI load instantly
     }
 
     // Render charts if on analytics page
@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.addEventListener("visibilitychange", async () => {
         if (!document.hidden) {
             if (isCacheStale()) {
-                await fetchAndDisplayRate();
+                fetchAndDisplayRate(); // Removed 'await'
             }
             if (!ws || ws.readyState === WebSocket.CLOSED) {
                 reconnectDelay = 1000;
