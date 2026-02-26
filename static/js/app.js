@@ -361,11 +361,11 @@ function hideOfflineBanner() {
     }
 }
 
-// ── Service Worker Registration ──────────────────────────────────────
-
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker
-        .register("/static/sw.js")
-        .then(() => console.log("SW registered"))
-        .catch((err) => console.warn("SW failed:", err));
+// ── Unregister Old Service Workers ───────────────────────────────────
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+            registration.unregister();
+        }
+    });
 }

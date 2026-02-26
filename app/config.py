@@ -37,6 +37,7 @@ class Settings:
 
     # ── Database ──────────────────────────────────────────────────────
     DB_PATH: Path = DB_PATH
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 
     # ── Parser: City Keywords ─────────────────────────────────────────
     # Lines must contain at least one of these to be considered Erbil

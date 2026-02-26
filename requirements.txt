@@ -6,7 +6,7 @@ uvicorn[standard]==0.30.6
 telethon==1.37.0
 
 # Database
-aiosqlite==0.20.0
+asyncpg==0.29.0
 
 # Config
 python-dotenv==1.0.1
