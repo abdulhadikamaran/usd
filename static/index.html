@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport" />
+    <title>نرخی دۆلار — Erbil Dollar Rate</title>
+    <meta name="description" content="Live Erbil USD/IQD exchange rate with offline support and currency converter" />
+    <meta name="theme-color" content="#0f1923" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f8f7f6" media="(prefers-color-scheme: light)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="/static/manifest.json" />
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "media",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f0b428",
+                        "primary-dark": "#dca31d",
+                        "background-light": "#f8f7f6",
+                        "background-dark": "#0f1923",
+                        "surface-dark": "#1a242f",
+                        "accent-green": "#22c55e",
+                        "accent-red": "#ef4444",
+                        "text-muted": "#94a3b8",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(26, 36, 47, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        @media (prefers-color-scheme: light) {
+            .glass-panel {
+                background: rgba(255, 255, 255, 0.7);
+                border: 1px solid rgba(0, 0, 0, 0.06);
+            }
+        }
+
+        .glow-effect {
+            box-shadow: 0 0 40px -10px rgba(240, 180, 40, 0.15);
+        }
+
+        @media (prefers-color-scheme: light) {
+            .glow-effect {
+                box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+            }
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Smooth page transitions */
+        .page-transition {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        /* Number input hide arrows */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* Flag icons */
+        .flag-us {
+            display: inline-block;
+            width: 20px;
+            height: 14px;
+            background: linear-gradient(180deg, #bf0a30 0%, #bf0a30 15%, #fff 15%, #fff 23%, #bf0a30 23%, #bf0a30 38%, #fff 38%, #fff 46%, #bf0a30 46%, #bf0a30 62%, #fff 62%, #fff 69%, #bf0a30 69%, #bf0a30 85%, #fff 85%);
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .flag-us::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 40%;
+            height: 54%;
+            background: #002868;
+        }
+
+        .flag-iq {
+            display: inline-block;
+            width: 20px;
+            height: 14px;
+            background: linear-gradient(180deg, #ce1126 0%, #ce1126 33%, #fff 33%, #fff 66%, #000 66%, #000 100%);
+            border-radius: 2px;
+        }
+
+        .flag-kurd {
+            display: inline-flex;
+            width: 24px;
+            height: 16px;
+            background: linear-gradient(180deg, #ef3340 0%, #ef3340 33%, #fff 33%, #fff 66%, #009639 66%, #009639 100%);
+            border-radius: 3px;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .flag-kurd::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #f9d616;
+            border-radius: 50%;
+            position: absolute;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-slate-100 selection:bg-primary/30">
+
+    <!-- ═══ PAGE: HOME ═══ -->
+    <div id="page-home" class="flex-1 flex flex-col min-h-screen">
+
+        <!-- Header -->
+        <header
+            class="sticky top-0 z-50 flex items-center justify-between px-6 pt-12 pb-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-transparent dark:border-white/5">
+            <div class="flex items-center gap-3">
+                <h2 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white" data-i18n="app_name">نرخی
+                    دۆلار</h2>
+            </div>
+            <button id="lang-toggle"
+                class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 transition-colors"
+                title="Switch language">
+                <span id="lang-flag" class="flag-us"></span>
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col items-center w-full max-w-md mx-auto px-6 pt-6 pb-28">
+
+            <!-- Rate Display -->
+            <div class="w-full flex flex-col items-center mb-10">
+                <div class="flex items-center gap-2 mb-2">
+                    <span
+                        class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium"
+                        data-i18n="live_market">بازاڕی ڕاستەوخۆ</span>
+                </div>
+                <h1 id="main-rate" class="text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">---
+                </h1>
+                <div class="flex items-center gap-2 mb-4">
+                    <p id="rate-per-100" class="text-slate-500 dark:text-slate-400 text-base font-medium"
+                        data-i18n="per_100">IQD بۆ $100</p>
+                    <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                    <div data-diff-container
+                        class="flex items-center text-accent-green text-sm font-semibold bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20">
+                        <span id="rate-diff-icon" class="material-symbols-outlined text-base mr-0.5">trending_up</span>
+                        <span id="rate-diff">+0</span>
+                    </div>
+                </div>
+                <p id="rate-updated" class="text-xs text-slate-400 dark:text-slate-500 font-medium"
+                    data-i18n="updated_just">ئێستا نوێکراوەتەوە</p>
+            </div>
+
+            <!-- Converter Card -->
+            <div class="w-full glass-panel glow-effect rounded-2xl p-5 relative mb-6">
+                <!-- USD Input -->
+                <div
+                    class="bg-slate-100 dark:bg-black/20 rounded-xl p-4 mb-1 border border-transparent focus-within:border-primary/50 transition-colors">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                            data-i18n="selling">فرۆشتن</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="flag-us"></span>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">USD</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl font-medium text-slate-400">$</span>
+                        <input id="usd-input"
+                            class="w-full bg-transparent border-none p-0 text-3xl font-bold text-slate-900 dark:text-white focus:ring-0 focus:outline-none placeholder-slate-600"
+                            placeholder="0" type="number" value="100" />
+                    </div>
+                </div>
+
+                <!-- Swap Button -->
+                <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                    <button id="swap-btn"
+                        class="flex items-center justify-center w-12 h-12 rounded-full bg-primary shadow-lg shadow-primary/20 border-4 border-background-light dark:border-surface-dark hover:scale-105 active:scale-95 transition-transform group">
+                        <span
+                            class="material-symbols-outlined text-background-dark font-bold transition-transform duration-300">swap_vert</span>
+                    </button>
+                </div>
+
+                <!-- IQD Output -->
+                <div
+                    class="bg-slate-100 dark:bg-black/20 rounded-xl p-4 mt-1 border border-transparent focus-within:border-primary/50 transition-colors">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
+                            data-i18n="buying">کڕین</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="flag-iq"></span>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">IQD</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input id="iqd-input"
+                            class="w-full bg-transparent border-none p-0 text-3xl font-bold text-primary focus:ring-0 focus:outline-none placeholder-slate-600 pointer-events-none"
+                            placeholder="0" type="text" value="0" readonly />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Grid -->
+            <div class="grid grid-cols-2 gap-3 w-full">
+                <button id="nav-to-analytics"
+                    class="flex flex-col items-start gap-2 p-4 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/5 shadow-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                    <div class="p-2 rounded-lg bg-primary/10 text-primary">
+                        <span class="material-symbols-outlined text-[20px]">analytics</span>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-semibold text-slate-900 dark:text-white"
+                            data-i18n="analysis">شیکاری</span>
+                        <span class="block text-xs text-slate-500" data-i18n="market_trends">ڕەوتی بازاڕ</span>
+                    </div>
+                </button>
+                <button
+                    class="flex flex-col items-start gap-2 p-4 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/5 shadow-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                    <div class="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+                        <span class="material-symbols-outlined text-[20px]">history</span>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-semibold text-slate-900 dark:text-white"
+                            data-i18n="history">مێژوو</span>
+                        <span class="block text-xs text-slate-500" data-i18n="days_7">٧ ڕۆژ</span>
+                    </div>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- ═══ PAGE: ANALYTICS ═══ -->
+    <div id="page-analytics" class="hidden flex-1 flex flex-col min-h-screen">
+
+        <!-- Analytics Header -->
+        <header
+            class="sticky top-0 z-20 flex items-center justify-between px-4 py-3 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+            <button id="analytics-back"
+                class="p-2 -ml-2 rounded-full hover:bg-slate-200 dark:hover:bg-white/5 transition-colors">
+                <span class="material-symbols-outlined text-slate-700 dark:text-slate-200"
+                    style="font-size: 24px;">arrow_back</span>
+            </button>
+            <h1 class="text-lg font-bold text-center flex-1" data-i18n="analytics">شیکاری</h1>
+            <div class="w-10"></div>
+        </header>
+
+        <!-- Analytics Content -->
+        <main class="flex-1 overflow-y-auto no-scrollbar pb-28">
+
+            <!-- Today Section -->
+            <section class="px-4 py-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold" data-i18n="today">ئەمڕۆ</h2>
+                    <span id="today-change"
+                        class="text-xs font-medium px-2 py-1 rounded bg-green-500/10 text-green-500 border border-green-500/20">+0%</span>
+                </div>
+                <div
+                    class="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div class="flex flex-col mb-6">
+                        <span class="text-sm text-slate-500 dark:text-text-muted font-medium"
+                            data-i18n="iqd_usd_rate">نرخی IQD/USD</span>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <span id="today-rate"
+                                class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">---</span>
+                            <span class="text-sm font-medium text-slate-400 dark:text-text-muted"
+                                data-i18n="iqd">IQD</span>
+                        </div>
+                    </div>
+                    <!-- Hourly Chart -->
+                    <div class="relative h-[160px] w-full" id="today-chart">
+                        <p class="text-center text-slate-400 py-12">Loading...</p>
+                    </div>
+                    <!-- Time Labels -->
+                    <div id="today-labels"
+                        class="flex justify-between mt-4 text-[11px] font-medium text-slate-400 dark:text-text-muted uppercase tracking-wider">
+                    </div>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section class="px-4 pb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold" data-i18n="history">مێژوو</h2>
+                    <div class="flex bg-slate-100 dark:bg-slate-800/50 rounded-lg p-1">
+                        <button data-history-tab="7"
+                            class="px-3 py-1 text-xs font-semibold rounded bg-white dark:bg-primary text-slate-900 dark:text-background-dark shadow-sm"
+                            data-i18n="days_7">٧ ڕۆژ</button>
+                        <button data-history-tab="30"
+                            class="px-3 py-1 text-xs font-semibold rounded text-slate-500 dark:text-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
+                            data-i18n="days_30">٣٠ ڕۆژ</button>
+                        <button data-history-tab="90"
+                            class="px-3 py-1 text-xs font-semibold rounded text-slate-500 dark:text-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
+                            data-i18n="days_90">٩٠ ڕۆژ</button>
+                    </div>
+                </div>
+
+                <!-- History Chart Card -->
+                <div
+                    class="relative bg-white/50 dark:bg-surface-dark/60 backdrop-blur-xl rounded-2xl p-5 border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden">
+                    <div
+                        class="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none">
+                    </div>
+                    <div class="flex justify-between items-end mb-6">
+                        <div>
+                            <span class="text-xs text-slate-500 dark:text-text-muted font-medium block mb-1"
+                                data-i18n="weekly_high">بەرزترین هەفتانە</span>
+                            <span id="history-high" class="text-lg font-bold text-slate-900 dark:text-white">---</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-500 dark:text-text-muted font-medium block mb-1"
+                                data-i18n="weekly_low">نزمترین هەفتانە</span>
+                            <span id="history-low" class="text-lg font-bold text-slate-900 dark:text-white">---</span>
+                        </div>
+                    </div>
+                    <div id="history-chart" class="relative h-[200px] w-full">
+                        <p class="text-center text-slate-400 py-12">Loading...</p>
+                    </div>
+                    <div id="history-labels"
+                        class="flex justify-between mt-4 text-[10px] font-medium text-slate-400 dark:text-text-muted">
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div
+                        class="bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                <span class="material-symbols-outlined text-sm">trending_up</span>
+                            </div>
+                            <span class="text-xs text-slate-500 dark:text-text-muted" data-i18n="trend">ڕەوت</span>
+                        </div>
+                        <p id="trend-label" class="font-bold text-sm" data-i18n="bullish">بەرزبوونەوە</p>
+                    </div>
+                    <div
+                        class="bg-white dark:bg-surface-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
+                                <span class="material-symbols-outlined text-sm">show_chart</span>
+                            </div>
+                            <span class="text-xs text-slate-500 dark:text-text-muted" data-i18n="volume">قەبارە</span>
+                        </div>
+                        <p class="font-bold text-sm" data-i18n="high">بەرز</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ═══ BOTTOM NAVIGATION ═══ -->
+    <nav
+        class="fixed bottom-0 w-full z-40 bg-background-light dark:bg-surface-dark border-t border-slate-200 dark:border-white/5 pb-6 pt-3 px-6">
+        <div class="flex justify-between items-end max-w-md mx-auto">
+            <a id="nav-home" href="#"
+                class="flex flex-col items-center justify-center gap-1 min-w-[64px] group text-primary">
+                <div class="flex items-center justify-center h-8 px-4 rounded-full bg-primary/20 transition-colors">
+                    <span class="material-symbols-outlined text-primary text-[24px]"
+                        style="font-variation-settings: 'FILL' 1;">home</span>
+                </div>
+                <span class="text-xs font-semibold text-slate-900 dark:text-white mt-1" data-i18n="home">سەرەتا</span>
+            </a>
+            <a id="nav-analytics" href="#"
+                class="flex flex-col items-center justify-center gap-1 min-w-[64px] group text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+                <div
+                    class="flex items-center justify-center h-8 px-4 rounded-full transition-colors group-hover:bg-slate-200 dark:group-hover:bg-white/5">
+                    <span class="material-symbols-outlined text-[24px]">monitoring</span>
+                </div>
+                <span class="text-xs font-medium mt-1" data-i18n="rates">نرخەکان</span>
+            </a>
+        </div>
+    </nav>
+
+
+
+    <!-- App JS (ES Module) -->
+    <script type="module" src="/static/js/app.js"></script>
+
+    <!-- Quick action nav bridge -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('nav-to-analytics');
+            const histBtn = document.querySelector('[data-i18n="history"]');
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    document.getElementById('nav-analytics')?.click();
+                });
+            }
+            // History quick action also goes to analytics
+            const cards = document.querySelectorAll('.grid.grid-cols-2 button');
+            if (cards[1]) {
+                cards[1].addEventListener('click', () => {
+                    document.getElementById('nav-analytics')?.click();
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
