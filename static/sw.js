@@ -1,7 +1,7 @@
 /**
  * Service Worker — Cache-first for static assets, stale-while-revalidate for API
  */
-const CACHE_NAME = "usd-rate-v1";
+const CACHE_NAME = "usd-rate-v2";
 
 const STATIC_ASSETS = [
     "/",
@@ -12,6 +12,9 @@ const STATIC_ASSETS = [
     "/static/js/converter.js",
     "/static/js/i18n.js",
     "/static/manifest.json",
+    "/static/flags/us.svg",
+    "/static/flags/iq.svg",
+    "/static/flags/kurd.svg",
 ];
 
 // Install — cache static assets

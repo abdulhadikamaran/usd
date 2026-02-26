@@ -249,7 +249,7 @@ function applyTranslations() {
         // Show the flag of the language you'll switch TO
         // Kurdish active → show US flag (tap to switch to English)
         // English active → show Kurdish flag (tap to switch to Kurdish)
-        langFlag.className = getLang() === "ku" ? "flag-us" : "flag-kurd";
+        langFlag.src = getLang() === "ku" ? "/static/flags/us.svg" : "/static/flags/kurd.svg";
     }
 
     // Re-display rate with new translations

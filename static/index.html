@@ -85,60 +85,13 @@
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button {
             -webkit-appearance: none;
+            appearance: none;
             margin: 0;
         }
 
         input[type=number] {
             -moz-appearance: textfield;
-        }
-
-        /* Flag icons */
-        .flag-us {
-            display: inline-block;
-            width: 20px;
-            height: 14px;
-            background: linear-gradient(180deg, #bf0a30 0%, #bf0a30 15%, #fff 15%, #fff 23%, #bf0a30 23%, #bf0a30 38%, #fff 38%, #fff 46%, #bf0a30 46%, #bf0a30 62%, #fff 62%, #fff 69%, #bf0a30 69%, #bf0a30 85%, #fff 85%);
-            border-radius: 2px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .flag-us::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 40%;
-            height: 54%;
-            background: #002868;
-        }
-
-        .flag-iq {
-            display: inline-block;
-            width: 20px;
-            height: 14px;
-            background: linear-gradient(180deg, #ce1126 0%, #ce1126 33%, #fff 33%, #fff 66%, #000 66%, #000 100%);
-            border-radius: 2px;
-        }
-
-        .flag-kurd {
-            display: inline-flex;
-            width: 24px;
-            height: 16px;
-            background: linear-gradient(180deg, #ef3340 0%, #ef3340 33%, #fff 33%, #fff 66%, #009639 66%, #009639 100%);
-            border-radius: 3px;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .flag-kurd::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background: #f9d616;
-            border-radius: 50%;
-            position: absolute;
+            appearance: textfield;
         }
     </style>
 </head>
@@ -159,7 +112,8 @@
             <button id="lang-toggle"
                 class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 transition-colors"
                 title="Switch language">
-                <span id="lang-flag" class="flag-us"></span>
+                <img id="lang-flag" src="/static/flags/us.svg" alt="Language"
+                    class="w-6 h-4 rounded-sm object-cover shadow-sm">
             </button>
         </header>
 
@@ -198,7 +152,7 @@
                         <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
                             data-i18n="selling">فرۆشتن</span>
                         <div class="flex items-center gap-1.5">
-                            <span class="flag-us"></span>
+                            <img src="/static/flags/us.svg" alt="US" class="w-6 h-4 rounded-sm shadow-sm" />
                             <span class="text-xs font-bold text-slate-700 dark:text-slate-300">USD</span>
                         </div>
                     </div>
@@ -226,7 +180,7 @@
                         <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
                             data-i18n="buying">کڕین</span>
                         <div class="flex items-center gap-1.5">
-                            <span class="flag-iq"></span>
+                            <img src="/static/flags/iq.svg" alt="IQ" class="w-6 h-4 rounded-sm shadow-sm" />
                             <span class="text-xs font-bold text-slate-700 dark:text-slate-300">IQD</span>
                         </div>
                     </div>
