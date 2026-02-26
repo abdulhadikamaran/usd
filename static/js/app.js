@@ -208,11 +208,20 @@ function displayRate(data) {
     // Updated time
     if (updatedEl && data.last_updated) {
         const updated = new Date(data.last_updated);
-        const mins = Math.floor((Date.now() - updated.getTime()) / 60000);
-        if (mins < 1) {
+        const minsTotal = Math.floor((Date.now() - updated.getTime()) / 60000);
+
+        if (minsTotal < 1) {
             updatedEl.textContent = t("updated_just");
+        } else if (minsTotal < 60) {
+            updatedEl.textContent = t("updated_ago").replace("{n}", minsTotal);
+        } else if (minsTotal < 1440) {
+            const hrs = Math.floor(minsTotal / 60);
+            const mins = minsTotal % 60;
+            updatedEl.textContent = t("updated_hr_min").replace("{h}", hrs).replace("{m}", mins);
         } else {
-            updatedEl.textContent = t("updated_ago").replace("{n}", mins);
+            const days = Math.floor(minsTotal / 1440);
+            const hrs = Math.floor((minsTotal % 1440) / 60);
+            updatedEl.textContent = t("updated_day_hr").replace("{d}", days).replace("{h}", hrs);
         }
     }
 }
