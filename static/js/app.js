@@ -64,6 +64,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Apply translations
     applyTranslations();
+
+    // Dynamically update the time ago text every minute
+    setInterval(() => {
+        const cached = getCachedRate();
+        if (cached) displayRate(cached);
+    }, 60000);
 });
 
 // ── WebSockets ───────────────────────────────────────────────────────
@@ -208,7 +214,8 @@ function displayRate(data) {
     // Updated time
     if (updatedEl && data.last_updated) {
         const updated = new Date(data.last_updated);
-        const minsTotal = Math.floor((Date.now() - updated.getTime()) / 60000);
+        // Use Math.max to prevent negative minutes (e.g., if server time is a few seconds ahead)
+        const minsTotal = Math.max(0, Math.floor((Date.now() - updated.getTime()) / 60000));
 
         if (minsTotal < 1) {
             updatedEl.textContent = t("updated_just");
