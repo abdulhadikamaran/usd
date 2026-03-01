@@ -155,8 +155,8 @@ class MessageParser:
                 logger.debug(f"[msg={message_id}] Froshtn extracted: {price:,}")
 
         # ── Step 3: Completeness check ────────────────────────────
-        has_format_a = penzi_price is not None and sur_price is not None
-        has_format_b = krin_price is not None and froshtn_price is not None
+        has_format_a = penzi_price is not None
+        has_format_b = froshtn_price is not None
 
         if not has_format_a and not has_format_b:
             found = []
@@ -173,13 +173,12 @@ class MessageParser:
 
         # ── Step 4: Compute average ───────────────────────────────
         if has_format_a:
-            average = round((penzi_price + sur_price) / 2)
+            average = penzi_price
+            sur_price = penzi_price
         else:
-            average = round((krin_price + froshtn_price) / 2)
-            # Map krin/froshtn to penzi/sur so db schema doesn't break
-            # Froshtn (Selling) is usually higher so we map to Sur, Krin (Buying) maps to Penzi
+            average = froshtn_price
+            penzi_price = froshtn_price
             sur_price = froshtn_price
-            penzi_price = krin_price
 
 
         # ── Step 5: Anomaly check ─────────────────────────────────

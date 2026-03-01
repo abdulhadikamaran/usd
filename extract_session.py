@@ -9,26 +9,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.config import settings
 
 async def extract():
-    print("Extracting String Session from local .session file...")
+    print("Generating a BRAND NEW String Session...")
     
-    # 1. Connect using the existing SQLite session file
+    # 1. Start a fresh, empty StringSession
     client = TelegramClient(
-        settings.SESSION_NAME, 
+        StringSession(), 
         settings.TELEGRAM_API_ID, 
         settings.TELEGRAM_API_HASH
     )
     
-    await client.connect()
+    # 2. Start the client (this will ask for phone number & SMS code in the terminal)
+    await client.start()
     
-    if await client.is_user_authorized():
-        # 2. Convert to StringSession
-        string_session = StringSession.save(client.session)
-        print("\n=== SUCCESS ===")
-        print(f"STRING_SESSION={string_session}")
-        print("===============\n")
-    else:
-        print("Error: The local session file is not authorized.")
-        
+    # 3. Print the resulting string session
+    print("\n\n" + "="*50)
+    print("SUCCESS! HERE IS YOUR BRAND NEW SESSION STRING:")
+    print("="*50)
+    print(client.session.save())
+    print("="*50 + "\n")
+    
     await client.disconnect()
 
 if __name__ == "__main__":
