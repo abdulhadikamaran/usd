@@ -45,6 +45,8 @@ class Settings:
     # ── Parser: Rate Type Keywords ────────────────────────────────────
     PENZI_KEYWORDS: list[str] = ["پێنجی"]
     SUR_KEYWORDS: list[str] = ["سوور"]
+    KRIN_KEYWORDS: list[str] = ["کڕین"]
+    FROSHTN_KEYWORDS: list[str] = ["فرۆشتن"]
 
     # ── Parser: Exclusion Keywords (skip entire message) ──────────────
     # Gold, official rate, central bank

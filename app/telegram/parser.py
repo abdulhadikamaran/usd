@@ -65,6 +65,8 @@ class MessageParser:
         self.city_keywords = settings.CITY_KEYWORDS
         self.penzi_keywords = settings.PENZI_KEYWORDS
         self.sur_keywords = settings.SUR_KEYWORDS
+        self.krin_keywords = getattr(settings, 'KRIN_KEYWORDS', ["کڕین"])
+        self.froshtn_keywords = getattr(settings, 'FROSHTN_KEYWORDS', ["فرۆشتن"])
         self.exclude_keywords = settings.EXCLUDE_KEYWORDS
         self.min_price = settings.MIN_VALID_PRICE
         self.max_price = settings.MAX_VALID_PRICE
@@ -100,6 +102,8 @@ class MessageParser:
         # ── Step 2: Line-by-line extraction ───────────────────────
         penzi_price = None
         sur_price = None
+        krin_price = None
+        froshtn_price = None
 
         lines = text.split('\n')
         for line in lines:
@@ -111,11 +115,13 @@ class MessageParser:
             if not self._has_city_keyword(line_stripped):
                 continue
 
-            # Is it a Penzi or Sur line?
+            # Check format A (Penzi/Sur) or Format B (Krin/Froshtn)
             is_penzi = self._has_keyword(line_stripped, self.penzi_keywords)
             is_sur = self._has_keyword(line_stripped, self.sur_keywords)
+            is_krin = self._has_keyword(line_stripped, self.krin_keywords)
+            is_froshtn = self._has_keyword(line_stripped, self.froshtn_keywords)
 
-            if not is_penzi and not is_sur:
+            if not any([is_penzi, is_sur, is_krin, is_froshtn]):
                 continue
 
             # Extract price from this line
@@ -141,14 +147,24 @@ class MessageParser:
             elif is_sur and sur_price is None:
                 sur_price = price
                 logger.debug(f"[msg={message_id}] Sur extracted: {price:,}")
+            elif is_krin and krin_price is None:
+                krin_price = price
+                logger.debug(f"[msg={message_id}] Krin extracted: {price:,}")
+            elif is_froshtn and froshtn_price is None:
+                froshtn_price = price
+                logger.debug(f"[msg={message_id}] Froshtn extracted: {price:,}")
 
         # ── Step 3: Completeness check ────────────────────────────
-        if penzi_price is None or sur_price is None:
+        has_format_a = penzi_price is not None and sur_price is not None
+        has_format_b = krin_price is not None and froshtn_price is not None
+
+        if not has_format_a and not has_format_b:
             found = []
-            if penzi_price is not None:
-                found.append(f"penzi={penzi_price:,}")
-            if sur_price is not None:
-                found.append(f"sur={sur_price:,}")
+            if penzi_price is not None: found.append(f"penzi={penzi_price:,}")
+            if sur_price is not None: found.append(f"sur={sur_price:,}")
+            if krin_price is not None: found.append(f"krin={krin_price:,}")
+            if froshtn_price is not None: found.append(f"froshtn={froshtn_price:,}")
+            
             logger.debug(
                 f"[msg={message_id}] Incomplete extraction "
                 f"(found: {', '.join(found) if found else 'nothing'})"
@@ -156,7 +172,15 @@ class MessageParser:
             return None
 
         # ── Step 4: Compute average ───────────────────────────────
-        average = round((penzi_price + sur_price) / 2)
+        if has_format_a:
+            average = round((penzi_price + sur_price) / 2)
+        else:
+            average = round((krin_price + froshtn_price) / 2)
+            # Map krin/froshtn to penzi/sur so db schema doesn't break
+            # Froshtn (Selling) is usually higher so we map to Sur, Krin (Buying) maps to Penzi
+            sur_price = froshtn_price
+            penzi_price = krin_price
+
 
         # ── Step 5: Anomaly check ─────────────────────────────────
         if last_average is not None:
